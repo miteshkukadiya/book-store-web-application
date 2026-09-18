@@ -1,61 +1,90 @@
 const router = require("express").Router();
+const mongoose = require("mongoose");
 const User = require("../models/user");
 const { authenticateToken } = require("./userAuth");
 
-// add book to faviurite
-router.put("/add-book-to-favourite", authenticateToken , async (req,res) => {
+const getUserId = (req) => {
+    if (req.user?.id && mongoose.isValidObjectId(req.user.id)) return req.user.id;
+    if (req.user?._id && mongoose.isValidObjectId(req.user._id)) return req.user._id;
+    if (req.headers.id && mongoose.isValidObjectId(req.headers.id)) return req.headers.id;
+    return null;
+};
+
+const getBookId = (req) => req.headers.bookid || req.body.bookid || req.params.bookid;
+
+// Add book to favourites
+router.put("/add-book-to-favourite", authenticateToken, async (req, res) => {
     try {
-        const {bookid,id} = req.headers;
-        const userData = await User.findById(id);
-        const isBookFavourite = userData.favourites.includes(bookid);
-        if(isBookFavourite)
-        {
-            return res.status(200).json({message : " Book is already in favourites"});
+        const userId = getUserId(req);
+        const bookid = getBookId(req);
+
+        if (!userId) {
+            return res.status(400).json({ message: "User authentication required" });
         }
-        await User.findByIdAndUpdate(id,{$push:{ favourites : bookid }});
-        return res.status(200).json({message : " Book added to  favourites"});
 
+        if (!bookid || !mongoose.isValidObjectId(bookid)) {
+            return res.status(400).json({ message: "Invalid book id" });
+        }
 
+        const userData = await User.findById(userId);
+        if (!userData) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const isBookFavourite = userData.favourites.some((fav) => fav.toString() === bookid.toString());
+        if (isBookFavourite) {
+            return res.status(200).json({ message: "Book is already in favourites" });
+        }
+
+        await User.findByIdAndUpdate(userId, { $addToSet: { favourites: bookid } });
+        return res.status(200).json({ message: "Book added to favourites" });
     } catch (error) {
-        res.status(500).json({message:"Internal server error"});
+        return res.status(500).json({ message: "Internal server error" });
     }
 });
 
-// remove from favourite
-router.put("/remove-book-from-favourite", authenticateToken , async (req,res) => {
+// Remove from favourites
+router.put("/remove-book-from-favourite", authenticateToken, async (req, res) => {
     try {
-        const {bookid,id} = req.headers;
-        const userData = await User.findById(id);
-        const isBookFavourite = userData.favourites.includes(bookid);
-        if(isBookFavourite)
-        {
-            await User.findByIdAndUpdate(id,{$pull:{ favourites : bookid }});
+        const userId = getUserId(req);
+        const bookid = getBookId(req);
+
+        if (!userId) {
+            return res.status(400).json({ message: "User authentication required" });
         }
-        
-        return res.status(200).json({message : " Book removed from favourites"});
 
+        if (!bookid || !mongoose.isValidObjectId(bookid)) {
+            return res.status(400).json({ message: "Invalid book id" });
+        }
 
+        await User.findByIdAndUpdate(userId, { $pull: { favourites: bookid } });
+        return res.status(200).json({ message: "Book removed from favourites" });
     } catch (error) {
-        res.status(500).json({message:"Internal server error"});
+        return res.status(500).json({ message: "Internal server error" });
     }
 });
 
-// get favourite books of a particular user
-router.get("/get-favourite-books" , authenticateToken , async (req,res) => {
+// Get favourite books of a particular user
+router.get("/get-favourite-books", authenticateToken, async (req, res) => {
     try {
-        const { id } = req.headers;
-        const userData = await User.findById(id).populate("favourites");
-        const faviuriteBooks = userData.favourites;
+        const userId = getUserId(req);
+        if (!userId) {
+            return res.status(400).json({ message: "User authentication required" });
+        }
+
+        const userData = await User.findById(userId).populate("favourites");
+        if (!userData) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const favouriteBooks = (userData.favourites || []).filter(Boolean);
         return res.json({
-            status :"Success",
-            data : faviuriteBooks,
+            status: "Success",
+            data: favouriteBooks,
         });
     } catch (error) {
-        return res.status(500).json({message : "An error occurred"});
+        return res.status(500).json({ message: "An error occurred" });
     }
 });
-
-
-
 
 module.exports = router;

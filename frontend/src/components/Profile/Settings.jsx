@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api/axios';
 import React, { useEffect, useState } from 'react';
 import Loader from '../Loader/Loader';
 
@@ -18,8 +18,8 @@ const Settings = () => {
 
   useEffect ( () => {
     const fetch = async () => {
-      const response = await axios.get(
-        "http://localhost:1000/api/v1/get-user-information",
+      const response = await api.get(
+        "/get-user-information",
         {headers}
       );
       setProfileData(response.data);
@@ -28,8 +28,8 @@ const Settings = () => {
     fetch();
   },[]);
   const submitAddress = async() => {
-    const response = await axios.put(
-      "http://localhost:1000/api/v1/update-address",
+    const response = await api.put(
+      "/update-address",
       Value,
       { headers }
     );

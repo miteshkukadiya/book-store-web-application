@@ -1,4 +1,22 @@
 const mongoose = require("mongoose");
+const { normalizeCartForStorage } = require("../utils/cart");
+
+const cartItemSchema = new mongoose.Schema(
+    {
+        book: {
+            type: mongoose.Types.ObjectId,
+            ref: "books",
+            required: true,
+        },
+        quantity: {
+            type: Number,
+            required: true,
+            min: 1,
+            default: 1,
+        },
+    },
+    { _id: false }
+);
 
 const user = new mongoose.Schema({
     username:{
@@ -34,13 +52,7 @@ const user = new mongoose.Schema({
             ref:"books",
         },
     ],
-    cart:[
-        {
-            type:mongoose.Types.ObjectId,
-            ref:"books",
-            
-        },
-        ],
+    cart: [cartItemSchema],
     orders:[
         {
             type:mongoose.Types.ObjectId,
@@ -50,5 +62,11 @@ const user = new mongoose.Schema({
 },
     {timestamps:true}
 );
+
+user.pre("init", function (doc) {
+    if (Array.isArray(doc.cart)) {
+        doc.cart = normalizeCartForStorage(doc.cart);
+    }
+});
 
 module.exports = mongoose.model("user",user);

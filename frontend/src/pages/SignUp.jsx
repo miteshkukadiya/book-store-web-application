@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../api/axios';
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -24,7 +24,7 @@ const SignUp = () => {
       }
       else
       {
-        const response = await axios.post("http://localhost:1000/api/v1/sign-up",Values);
+        const response = await api.post("/sign-up",Values);
         alert(response.data.message);
         navigate("/LogIn")
       }

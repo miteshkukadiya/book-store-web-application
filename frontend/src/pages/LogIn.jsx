@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom';
 import { authActions } from '../store/auth';
-import axios from 'axios';
+import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -27,7 +27,7 @@ const LogIn = () => {
       }
       else
       {
-        const response = await axios.post("http://localhost:1000/api/v1/sign-in",Values);
+        const response = await api.post("/sign-in",Values);
         // console.log(response.data.id);
         dispatch(authActions.login());
         dispatch(authActions.changeRole(response.data.role));
