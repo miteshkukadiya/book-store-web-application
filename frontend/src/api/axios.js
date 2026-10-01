@@ -21,16 +21,24 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for handling 401 unauthenticated
+// Response interceptor for handling invalid or expired authentication tokens
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      const message = error.response.data?.message;
-      if (message && message.toLowerCase().includes("token expired")) {
+      const message = error.response.data?.message?.toLowerCase() || "";
+      const tokenIsInvalid =
+        message.includes("token invalid or expired") ||
+        message.includes("token expired");
+
+      if (tokenIsInvalid && localStorage.getItem("token")) {
         localStorage.removeItem("token");
         localStorage.removeItem("id");
         localStorage.removeItem("role");
+
+        if (window.location.pathname !== "/LogIn") {
+          window.location.assign("/LogIn");
+        }
       }
     }
     return Promise.reject(error);
